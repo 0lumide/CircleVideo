@@ -59,6 +59,9 @@ public class RecordButton extends ImageButton {
      * @param listener the object that implements recordListener
      */
     public void setRecordListener(RecordButtonListener listener){
+        if(listener == null) {
+            isRecording = false;
+        }
         recordListener = listener;
     }
 
@@ -120,7 +123,9 @@ public class RecordButton extends ImageButton {
     private void cleanUpHandlers(){
         //Stop recording if still recording
         if(isRecording()) {
-            recordListener.onStopRecording();
+            if(recordListener != null) {
+                recordListener.onStopRecording();
+            }
             isRecording = false;
         }
 
@@ -151,7 +156,9 @@ public class RecordButton extends ImageButton {
             Log.v("Gesture", "stop " + event.getAction());
             isRecording = false;
             cleanUpHandlers();
-            recordListener.onStopRecording();
+            if(recordListener != null) {
+                recordListener.onStopRecording();
+            }
             getParent().requestDisallowInterceptTouchEvent(false);
         }
         return result;
@@ -181,7 +188,9 @@ public class RecordButton extends ImageButton {
             if(isEnabled()) {
                 Log.v("Gesture", "longPress");
                 getParent().requestDisallowInterceptTouchEvent(true);
-                recordListener.onStartRecording();
+                if(recordListener != null) {
+                    recordListener.onStartRecording();
+                }
                 initializeHandlers();
                 isRecording = true;
             }
@@ -189,7 +198,9 @@ public class RecordButton extends ImageButton {
 
         @Override
         public boolean onSingleTapUp (MotionEvent event){
-            recordListener.onSingleTap();
+            if(recordListener != null) {
+                recordListener.onSingleTap();
+            }
             Log.v("Gesture", "SingleTapUp");
             return false;
         }

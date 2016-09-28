@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">まるいビデオ</string>
+    <string name="title_activity_video">ビデオ</string>
+    <string name="first_run_title">こんにちは</string>
+    <string name="first_run_message">デバイを優しく回ります</string>
+    <string name="close_button_description">Xボタン</string>
+    <string name="flash_button_description">フラッシュモード</string>
+    <string name="switch_camera_button_description">カメラを選択</string>
+    <string name="shutter_button_description">シャッターボタン</string>
+</resources>

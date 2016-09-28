@@ -1,10 +1,13 @@
 <resources>
     <string name="app_name">Circle Video</string>
+    <string name="switch_camera_button_description">Select camera</string>
+    <string name="flash_button_description">flash mode</string>
+    <string name="shutter_button_description">Shutter button</string>
 
-    <string name="title_activity_video">VideoActivity</string>
-    <string name="close_button_description">Button to close video</string>
+
+    <string name="title_activity_video">Video</string>
+    <string name="close_button_description">Close video</string>
     <string name="first_run_title">Hello</string>
     <string name="first_run_message">Gently rotate your device to see the circle effect</string>
 
-    <string name="title_activity_fullscreen">FullscreenActivity</string>
 </resources>

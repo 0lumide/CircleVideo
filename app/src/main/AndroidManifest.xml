@@ -35,8 +35,7 @@
             android:theme="@style/AppTheme.NoActionBar.NoNavBar">
         </activity>
         <activity
-            android:name=".FullscreenActivity"
-            android:label="@string/title_activity_fullscreen">
+            android:name=".FullscreenActivity">
         </activity>
     </application>
 

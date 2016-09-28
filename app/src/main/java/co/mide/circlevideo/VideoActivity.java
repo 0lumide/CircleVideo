@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
+import android.util.Log;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewTreeObserver;
@@ -86,8 +87,8 @@ public class VideoActivity extends FullscreenActivity {
     private void loadImage(File file) {
         Glide.with(this)
                 .fromFile()
-                .fitCenter()
                 .load(file)
+                .fitCenter()
                 .into(imageView);
     }
 
@@ -144,13 +145,14 @@ public class VideoActivity extends FullscreenActivity {
     }
 
     private void resizeTextureView() {
-        float ratioX, ratioY;
-        float previewRatioX, previewRatioY;
+        double ratioX, ratioY;
+        double previewRatioX, previewRatioY;
         int screenWidth = getScreenWidth();
         int screenHeight = getScreenHeight();
 
-        float squared = (float)(Math.pow(screenHeight, 2) + Math.pow(screenWidth, 2));
-        float maxLength = (float)Math.sqrt(squared);
+        Log.d("dbug", "orig aspect ratio: "+divideInts(recordedWidth, recordedHeight));
+        double squared = Math.pow(screenHeight, 2) + Math.pow(screenWidth, 2);
+        double maxLength = Math.sqrt(squared);
 
         if(previewWidth < previewHeight) {
             previewRatioX = maxLength/previewWidth;
@@ -163,26 +165,27 @@ public class VideoActivity extends FullscreenActivity {
         if(divideInts(previewHeight, previewWidth) > divideInts(recordedHeight, recordedWidth)) {
             //this means the preview got cut on the sides
             ratioY = previewRatioY;
-            float aspectRatio = divideInts(recordedWidth, recordedHeight);
-            float newHeight = ratioY * screenHeight;
-            float newWidth = aspectRatio * newHeight;
-            ratioX = newWidth/screenWidth;
+            double aspectRatio = divideInts(recordedWidth, recordedHeight);
+            double newHeight = ratioY * screenHeight;
+            double newWidth = aspectRatio * newHeight;
+            ratioX = newWidth / screenWidth;
 
         } else {
             //this means the preview got cut on the top and bottom
             ratioX = previewRatioX;
-            float aspectRatio = divideInts(recordedWidth, recordedHeight);
-            float newWidth = ratioX * screenWidth;
-            float newHeight = newWidth / aspectRatio;
+            double aspectRatio = divideInts(recordedWidth, recordedHeight);
+            double newWidth = ratioX * screenWidth;
+            double newHeight = newWidth / aspectRatio;
             ratioY = newHeight / screenHeight;
         }
         if(isVideo) {
-            textureView.setScaleX(ratioX);
-            textureView.setScaleY(ratioY);
+            textureView.setScaleX((float) ratioX);
+            textureView.setScaleY((float) ratioY);
         } else {
-            imageView.setScaleX(ratioX);
-            imageView.setScaleY(ratioY);
+            imageView.setScaleX((float) ratioX);
+            imageView.setScaleY((float) ratioY);
         }
+        Log.d("dbug", "new aspect ratio: "+((ratioX*previewWidth)/(ratioY*previewHeight)));
     }
 
 
@@ -195,8 +198,8 @@ public class VideoActivity extends FullscreenActivity {
         return  ((RelativeLayout) textureView.getParent()).getHeight();
     }
 
-    private float divideInts(int numerator, int denominator) {
-        return ((float)numerator)/denominator;
+    private double divideInts(int numerator, int denominator) {
+        return ((double)numerator)/denominator;
     }
 
     private void showInfoDialog() {

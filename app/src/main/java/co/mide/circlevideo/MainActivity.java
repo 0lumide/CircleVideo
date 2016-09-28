@@ -102,6 +102,7 @@ public class MainActivity extends FullscreenActivity {
 
     void launchVideoActivityForImage() {
         int[] size = controller.getImageSize();
+        Log.d("dbug", "size: "+size[0]+", "+size[1]);
         startActivity(VideoActivity.getStartIntent(this, false, capturedMedia,
                 textureView.getWidth(), textureView.getHeight() ,
                 size[0], size[1]));

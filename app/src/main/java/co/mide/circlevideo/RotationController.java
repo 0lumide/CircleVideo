@@ -2,16 +2,11 @@ package co.mide.circlevideo;
 
 import android.content.Context;
 import android.hardware.SensorManager;
+import android.view.Choreographer;
 
-import org.hitlabnz.sensor_fusion_demo.orientationProvider.GravityCompassProvider;
+import org.hitlabnz.sensor_fusion_demo.orientationProvider.ImprovedOrientationSensor2Provider;
 import org.hitlabnz.sensor_fusion_demo.orientationProvider.OrientationProvider;
 import org.hitlabnz.sensor_fusion_demo.representation.Quaternion;
-
-import java.util.concurrent.TimeUnit;
-
-import rx.Observable;
-import rx.Subscription;
-import rx.android.schedulers.AndroidSchedulers;
 
 /**
  * Class for handling gyroscope event.
@@ -22,8 +17,6 @@ class RotationController {
 
     private Context context;
     private AngleChangeListener angleChangeListener;
-    private Subscription subscription;
-    private float[] angles = new float[3];
 
 
     RotationController(Context context, AngleChangeListener angleChangeListener) {
@@ -31,29 +24,36 @@ class RotationController {
         this.angleChangeListener = angleChangeListener;
     }
 
-    private float firstAngle = Float.POSITIVE_INFINITY;
+    private float firstAngle;
+    private int firstN = -5;
     private Quaternion quaternion = new Quaternion();
 
     void init() {
         SensorManager sensorManager
                 = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
-        orientationProvider = new GravityCompassProvider(sensorManager);
+        orientationProvider = new ImprovedOrientationSensor2Provider(sensorManager);
         orientationProvider.start();
-        subscription = Observable.interval(40, TimeUnit.MILLISECONDS)
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe((time) -> {
-                    orientationProvider.getEulerAngles(angles);
-                    orientationProvider.getQuaternion(quaternion);
-                    if(firstAngle == Float.POSITIVE_INFINITY) {
+        final Choreographer choreographer = Choreographer.getInstance();
+
+        choreographer.postFrameCallback(new Choreographer.FrameCallback() {
+            @Override
+            public void doFrame(long frameTimeNanos) {
+                orientationProvider.getQuaternion(quaternion);
+                if(firstN < 0) {
+                    firstN++;
+                    if(firstN >= 0) {
                         firstAngle = calcZeta(quaternion.getW(), quaternion.getX(),
                                 quaternion.getY(), quaternion.getZ());
-                    }else{
-                        float zeta = calcZeta(quaternion.getW(), quaternion.getX(),
-                                quaternion.getY(), quaternion.getZ());
-                        angleChangeListener.angleChange(firstAngle - zeta);
                     }
+                }else{
+                    float zeta = calcZeta(quaternion.getW(), quaternion.getX(),
+                            quaternion.getY(), quaternion.getZ());
+                    angleChangeListener.angleChange(firstAngle - zeta);
+                }
+                choreographer.postFrameCallback(this);
 
-                });
+            }
+        });
     }
 
     private float calcPhi(float q0, float q1, float q2, float q3){
@@ -69,7 +69,6 @@ class RotationController {
     }
 
     void cleanUp() {
-        subscription.unsubscribe();
         orientationProvider.stop();
     }
 

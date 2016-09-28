@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Circle Video</string>
+
+    <string name="title_activity_video">VideoActivity</string>
+    <string name="close_button_description">Button to close video</string>
+    <string name="first_run_title">Hello</string>
+    <string name="first_run_message">Gently rotate your device to see the circle effect</string>
+
+    <string name="title_activity_fullscreen">FullscreenActivity</string>
+</resources>

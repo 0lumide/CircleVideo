@@ -1,0 +1,27 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipChildren="true"
+    android:clipToPadding="false"
+    tools:context="co.mide.circlevideo.MainActivity">
+
+    <TextureView android:id="@+id/texture_view"
+        android:layout_margin="0dp"
+        android:padding="0dp"
+        android:clickable="true"
+        android:layout_centerInParent="true"
+        android:layout_height="match_parent"
+        android:layout_width="match_parent"/>
+
+    <co.mide.circlevideo.RecordButton
+        android:elevation="5dp"
+        android:id="@+id/record_button"
+        android:background="@drawable/soundbyte_record_button"
+        android:layout_width="100dp"
+        android:padding="10dp"
+        android:layout_margin="5dp"
+        android:layout_height="100dp"
+        android:layout_centerHorizontal="true"
+        android:layout_alignParentBottom="true"/>
+</RelativeLayout>

@@ -1,0 +1,4 @@
+<resources>
+    <!-- Used to track viewPagerListener for View BindingAdapter -->
+    <item type="id" name="viewPagerListener"/>
+</resources>

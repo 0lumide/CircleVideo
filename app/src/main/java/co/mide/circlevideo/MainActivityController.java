@@ -27,7 +27,6 @@ class MainActivityController {
         if(mainActivity.getCamera() != null) {
             mainActivity.getCamera().autoFocus(null);
         }
-        mainActivity.setToolbarVisibility(false);
     };
 
     View.OnClickListener getTextureClickListener() {
@@ -168,5 +167,16 @@ class MainActivityController {
             camera.setDisplayOrientation(90);
             camera.startPreview();
         }
+    }
+
+    private boolean isBackCamera = true;
+
+    void toggleCamera() {
+        if(isBackCamera) {
+            mainActivity.openCamera(Camera.CameraInfo.CAMERA_FACING_FRONT);
+        } else {
+            mainActivity.openCamera(Camera.CameraInfo.CAMERA_FACING_BACK);
+        }
+        isBackCamera = !isBackCamera;
     }
 }

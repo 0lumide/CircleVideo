@@ -2,7 +2,6 @@ package co.mide.circlevideo;
 
 import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
@@ -58,12 +57,7 @@ public class VideoActivity extends FullscreenActivity {
             = new ViewTreeObserver.OnGlobalLayoutListener() {
         @Override
         public void onGlobalLayout() {
-            if(Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
-                //noinspection deprecation
-                relativeLayout.getViewTreeObserver().removeGlobalOnLayoutListener(this);
-            } else {
-                relativeLayout.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-            }
+            relativeLayout.getViewTreeObserver().removeOnGlobalLayoutListener(this);
 
             resizeTextureView();
             if(isVideo) {
@@ -99,13 +93,6 @@ public class VideoActivity extends FullscreenActivity {
         setToolbarVisibility(false);
         rotationController.init();
 
-
-        if(isVideo) {
-            textureView.setOnClickListener((view) -> setToolbarVisibility(false));
-        }else {
-            imageView.setOnClickListener((view) -> setToolbarVisibility(false));
-        }
-
         if(isFirstRun()) {
             showInfoDialog();
         }
@@ -115,9 +102,6 @@ public class VideoActivity extends FullscreenActivity {
     public void onPause() {
         super.onPause();
         rotationController.cleanUp();
-
-        textureView.setOnClickListener(null);
-        imageView.setOnClickListener(null);
 
         if (dialog != null) {
             dialog.dismiss();

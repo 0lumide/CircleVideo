@@ -1,16 +1,20 @@
 package co.mide.circlevideo;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
+import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.TextureView;
+import android.view.View;
+import android.widget.ImageButton;
 import android.widget.RelativeLayout;
 
 import java.io.File;
-
-import rx.subscriptions.CompositeSubscription;
 
 @SuppressWarnings("deprecation")
 public class MainActivity extends FullscreenActivity {
@@ -20,7 +24,7 @@ public class MainActivity extends FullscreenActivity {
     private SurfaceTexture surface;
     private MainActivityController controller;
     private File capturedMedia;
-    private CompositeSubscription subscriptions;
+    private final int CAMERA_REQUEST_CODE = 88;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,7 +33,7 @@ public class MainActivity extends FullscreenActivity {
         textureView = (TextureView) findViewById(R.id.texture_view);
         recordButton = (RecordButton) findViewById(R.id.record_button);
         controller = new MainActivityController(this);
-        subscriptions = new CompositeSubscription();
+        initCameraSwitch();
     }
 
     @Override
@@ -42,7 +46,6 @@ public class MainActivity extends FullscreenActivity {
         recordButton.setRecordListener(null);
         textureView.setOnClickListener(null);
         textureView.setSurfaceTextureListener(null);
-        subscriptions.clear();
     }
 
     void setCapturedFile(File file) {
@@ -56,8 +59,45 @@ public class MainActivity extends FullscreenActivity {
         recordButton.setRecordListener(controller.getRecordListener());
         textureView.setOnClickListener(controller.getTextureClickListener());
 
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (checkSelfPermission(Manifest.permission.CAMERA)
+                    != PackageManager.PERMISSION_GRANTED) {
+
+                requestPermissions(new String[]{Manifest.permission.CAMERA}, CAMERA_REQUEST_CODE);
+            }
+        }else{
+            openCamera();
+        }
+    }
+
+    private void initCameraSwitch() {
+        ImageButton switchButton = (ImageButton) findViewById(R.id.image_button_switch);
+        if(Camera.getNumberOfCameras() == 1){
+            switchButton.setVisibility(View.INVISIBLE);
+        } else {
+            switchButton.setOnClickListener((view) -> controller.toggleCamera());
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == CAMERA_REQUEST_CODE) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                openCamera();
+            }
+        }
+    }
+
+    void openCamera(int cameraId)  {
         try{
-            camera = Camera.open();
+            if(camera != null){
+                camera.stopPreview();
+                camera.release();
+                camera = null;
+            }
+            camera = Camera.open(cameraId);
             //set listener after camera is available or else there'll be problems
             textureView.setSurfaceTextureListener(controller.getSurfaceTextureListener());
             controller.setupCamera(camera);
@@ -66,6 +106,17 @@ public class MainActivity extends FullscreenActivity {
             Log.e("Open Camera", "failed to open Camera");
             e.printStackTrace();
         }
+    }
+
+    Camera openCamera() {
+        if(Camera.getNumberOfCameras() > 1) {
+            openCamera(Camera.CameraInfo.CAMERA_FACING_BACK);
+        } else if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FRONT)) {
+            openCamera(Camera.CameraInfo.CAMERA_FACING_FRONT);
+        } else {
+            openCamera(Camera.CameraInfo.CAMERA_FACING_BACK);
+        }
+        return camera;
     }
 
     void showErrorMessage() {

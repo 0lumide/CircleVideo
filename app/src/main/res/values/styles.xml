@@ -14,8 +14,11 @@
     </style>
 
     <style name="AppTheme.NoActionBar.NoNavBar">
-        <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:windowActionBarOverlay">true</item>
+    </style>
+
+    <style name="AppTheme.NoActionBar.NoNavBar.Transparent">
+        <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:windowIsTranslucent">true</item>
     </style>
 

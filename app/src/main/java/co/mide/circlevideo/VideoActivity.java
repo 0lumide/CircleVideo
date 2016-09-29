@@ -2,9 +2,13 @@ package co.mide.circlevideo;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.SurfaceTexture;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
+import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewTreeObserver;
@@ -14,6 +18,7 @@ import android.widget.RelativeLayout;
 import com.bumptech.glide.Glide;
 
 import java.io.File;
+import java.io.IOException;
 
 public class VideoActivity extends FullscreenActivity {
     final static String PREVIEW_WIDTH = "co.mide.circlevideo.VideoActivity.PREVIEW_WIDTH";
@@ -69,6 +74,27 @@ public class VideoActivity extends FullscreenActivity {
         }
     };
 
+    MediaPlayer mediaPlayer;
+    public void onSurfaceReady(SurfaceTexture surface) {
+        Surface s = new Surface(surface);
+
+        try {
+            mediaPlayer = new MediaPlayer();
+            mediaPlayer.setLooping(true);
+            mediaPlayer.setDataSource(recordedFile.getAbsolutePath());
+            mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+            mediaPlayer.setSurface(s);
+            mediaPlayer.setOnErrorListener((mp, what, extra)->{
+                //todo show error dialog
+                return true;
+            });
+            mediaPlayer.prepare();
+            mediaPlayer.start();
+        } catch (IllegalStateException | IOException e) {
+            // TODO show error dialog
+            e.printStackTrace();
+        }
+    }
     private void extractBundleExtras() {
         previewHeight = getIntent().getIntExtra(PREVIEW_HEIGHT, -1);
         previewWidth = getIntent().getIntExtra(PREVIEW_WIDTH, -1);
@@ -86,12 +112,44 @@ public class VideoActivity extends FullscreenActivity {
                 .into(imageView);
     }
 
+    private TextureView.SurfaceTextureListener
+            surfaceTextureListener = new TextureView.SurfaceTextureListener() {
+        @Override
+        public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+            onSurfaceReady(surface);
+        }
+
+        @Override
+        public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
+            // Ignored, Camera does all the work for us
+        }
+
+        @Override
+        public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
+            return true;
+        }
+
+        @Override
+        public void onSurfaceTextureUpdated(SurfaceTexture surface) {
+            // Invoked every time there's a new Camera preview frame
+        }
+    };
+
     @Override
     public void onResume() {
         super.onResume();
         overridePendingTransition(0, 0);
         setToolbarVisibility(false);
         rotationController.init();
+
+        if(isVideo) {
+            if (textureView.getSurfaceTexture() == null) {
+                textureView.getSurfaceTexture();
+                textureView.setSurfaceTextureListener(surfaceTextureListener);
+            } else {
+                onSurfaceReady(textureView.getSurfaceTexture());
+            }
+        }
 
         if(isFirstRun()) {
             showInfoDialog();
@@ -102,6 +160,13 @@ public class VideoActivity extends FullscreenActivity {
     public void onPause() {
         super.onPause();
         rotationController.cleanUp();
+        if(mediaPlayer != null) {
+            mediaPlayer.stop();
+        }
+
+        if(isVideo) {
+            textureView.setSurfaceTextureListener(null);
+        }
 
         if (dialog != null) {
             dialog.dismiss();

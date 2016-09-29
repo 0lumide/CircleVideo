@@ -1,10 +1,12 @@
 package co.mide.circlevideo;
 
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
+import android.media.CamcorderProfile;
 import android.media.ExifInterface;
-import android.util.Log;
+import android.media.MediaRecorder;
 import android.view.TextureView;
 import android.view.View;
 
@@ -18,6 +20,7 @@ class MainActivityController {
     private MainActivity mainActivity;
     private int[] videoSize = new int[2];
     private int[] imageSize = new int[2];
+    private MediaRecorder mediaRecorder;
 
     MainActivityController(MainActivity mainActivity) {
         this.mainActivity = mainActivity;
@@ -33,16 +36,50 @@ class MainActivityController {
         return textureSurfaceClickListener;
     }
 
+    private void resetMediaRecorder() {
+        if(mediaRecorder != null) {
+            mediaRecorder.reset();
+            mediaRecorder.release();
+            mediaRecorder = null;
+        }
+        if(mainActivity.getCamera() != null) {
+            mainActivity.getCamera().lock();
+        }
+    }
+
     private RecordButton.RecordButtonListener recordListener
             = new RecordButton.RecordButtonListener() {
         @Override
         public void onStartRecording() {
-            Log.d("dbug", "start");
+            mediaRecorder = new MediaRecorder();
+            mainActivity.getCamera().unlock();
+            mediaRecorder.setCamera(mainActivity.getCamera());
+            mediaRecorder.setAudioSource(MediaRecorder.AudioSource.DEFAULT);
+            mediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
+            CamcorderProfile profile
+                    = CamcorderProfile.get(getCameraId(), CamcorderProfile.QUALITY_HIGH);
+            profile.videoFrameWidth = videoSize[0];
+            profile.videoFrameHeight = videoSize[1];
+            mediaRecorder.setProfile(profile);
+            mediaRecorder.setOrientationHint(90);
+            File file = mainActivity.createFile("mp4");
+            mediaRecorder.setOutputFile(file.getPath());
+            try {
+                mediaRecorder.prepare();
+                mediaRecorder.start();
+            }catch (IllegalStateException | IOException e) {
+                e.printStackTrace();
+                resetMediaRecorder();
+                mainActivity.showErrorMessage();
+            }
         }
 
         @Override
         public void onStopRecording() {
-            Log.d("dbug", "end");
+            if(mediaRecorder != null) {
+                mediaRecorder.stop();
+            }
+            resetMediaRecorder();
             mainActivity.launchVideoActivity();
         }
 
@@ -51,15 +88,13 @@ class MainActivityController {
             mainActivity.getCamera().takePicture(null, null, (data, camera) -> {
                 FileOutputStream fos = null;
                 try {
-                    File file = new File(mainActivity.getFilesDir(),
-                            System.currentTimeMillis() + ".jpg");
+                    File file = mainActivity.createFile("jpg");
                     fos = mainActivity.openFileOutput(file.getName(), Context.MODE_PRIVATE);
                     fos.write(data);
                     ExifInterface exif = new ExifInterface(file.getAbsolutePath());
                     exif.setAttribute(ExifInterface.TAG_ORIENTATION,
                             String.valueOf(ExifInterface.ORIENTATION_ROTATE_90));
                     exif.saveAttributes();
-                    mainActivity.setCapturedFile(file);
                     mainActivity.launchVideoActivityForImage();
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -86,7 +121,6 @@ class MainActivityController {
             surfaceTextureListener = new TextureView.SurfaceTextureListener() {
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-            Log.d("dbug", "created");
             mainActivity.setSurface(surface);
             if(mainActivity.getCamera() != null) {
                 setupCamera(mainActivity.getCamera());
@@ -100,7 +134,6 @@ class MainActivityController {
 
         @Override
         public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
-            Log.d("dbug", "destroyed");
             return true;
         }
 
@@ -127,35 +160,53 @@ class MainActivityController {
         return new int[]{maxWidth, maxHeight};
     }
 
-    int[] getVideoSize() {
-        return videoSize.clone();
+    /**
+     * @return the width of the rotated video
+     */
+    int getVideoWidth() {
+        return videoSize[1];
     }
 
-    int[] getImageSize() {
-        return imageSize.clone();
+    /**
+     * @return the height of the rotated video
+     */
+    int getVideoHeight() {
+        return videoSize[0];
+    }
+
+    /**
+     * @return the width of the rotated image
+     */
+    int getImageWidth() {
+        return imageSize[1];
+    }
+
+    /**
+     * @return the height of the rotated image
+     */
+    int getImageHeight() {
+        return imageSize[0];
     }
 
     void setupCamera(final Camera camera) {
         Camera.Parameters param = camera.getParameters();
         param.setFlashMode(Camera.Parameters.FLASH_MODE_AUTO);
+
         int[] size = getGoodSize(param.getSupportedPreviewSizes());
         //switched width and height because layout is portrait
         mainActivity.scalePreviewTextureView(size[1], size[0]);
-        param.setPreviewSize(size[0], size[1]);
 
+        param.setPreviewSize(size[0], size[1]);
         if(param.getSupportedVideoSizes() != null) {
             size = getGoodSize(param.getSupportedVideoSizes());
         }
-        //switched width and height for the same reason
-        videoSize[0] = size[1];
-        videoSize[1] = size[0];
-        //todo setMediarecorder stuff
+
+        videoSize = size.clone();
 
         size = getGoodSize(param.getSupportedPictureSizes());
         param.setPictureSize(size[0], size[1]);
-        //switched width and height for the same reason
-        imageSize[0] = size[1];
-        imageSize[1] = size[0];
+
+        imageSize = size.clone();
         camera.setParameters(param);
 
         if(mainActivity.getSurface() != null) {
@@ -171,12 +222,30 @@ class MainActivityController {
 
     private boolean isBackCamera = true;
 
-    void toggleCamera() {
-        if(isBackCamera) {
-            mainActivity.openCamera(Camera.CameraInfo.CAMERA_FACING_FRONT);
+    int getCameraId() {
+        if(mainActivity.getCamera() == null) {
+            PackageManager pm = mainActivity.getPackageManager();
+            if (Camera.getNumberOfCameras() > 1) {
+                isBackCamera = true;
+                return Camera.CameraInfo.CAMERA_FACING_BACK;
+            } else if (pm.hasSystemFeature(PackageManager.FEATURE_CAMERA_FRONT)) {
+                isBackCamera = false;
+                return Camera.CameraInfo.CAMERA_FACING_FRONT;
+            } else {
+                isBackCamera = true;
+                return Camera.CameraInfo.CAMERA_FACING_BACK;
+            }
         } else {
-            mainActivity.openCamera(Camera.CameraInfo.CAMERA_FACING_BACK);
+            if(isBackCamera) {
+                return Camera.CameraInfo.CAMERA_FACING_BACK;
+            } else {
+                return Camera.CameraInfo.CAMERA_FACING_FRONT;
+            }
         }
+    }
+
+    void toggleCamera() {
         isBackCamera = !isBackCamera;
+        mainActivity.openCamera(getCameraId());
     }
 }

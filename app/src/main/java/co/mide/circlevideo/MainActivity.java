@@ -48,10 +48,6 @@ public class MainActivity extends FullscreenActivity {
         textureView.setSurfaceTextureListener(null);
     }
 
-    void setCapturedFile(File file) {
-        capturedMedia = file;
-    }
-
     @Override
     public void onResume() {
         super.onResume();
@@ -109,18 +105,18 @@ public class MainActivity extends FullscreenActivity {
     }
 
     Camera openCamera() {
-        if(Camera.getNumberOfCameras() > 1) {
-            openCamera(Camera.CameraInfo.CAMERA_FACING_BACK);
-        } else if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FRONT)) {
-            openCamera(Camera.CameraInfo.CAMERA_FACING_FRONT);
-        } else {
-            openCamera(Camera.CameraInfo.CAMERA_FACING_BACK);
-        }
+        openCamera(controller.getCameraId());
         return camera;
     }
 
-    void showErrorMessage() {
+    File createFile(String extension) {
+        File file = new File(getFilesDir(), System.currentTimeMillis() + "." + extension);
+        this.capturedMedia = file;
+        return file;
+    }
 
+    void showErrorMessage() {
+        //todo
     }
 
     void scalePreviewTextureView(int width, int height) {
@@ -145,18 +141,15 @@ public class MainActivity extends FullscreenActivity {
     }
 
     void launchVideoActivity() {
-        int[] size = controller.getVideoSize();
         startActivity(VideoActivity.getStartIntent(this, true, capturedMedia,
                 textureView.getWidth(), textureView.getHeight() ,
-                size[0], size[1]));
+                controller.getVideoWidth(), controller.getVideoHeight()));
     }
 
     void launchVideoActivityForImage() {
-        int[] size = controller.getImageSize();
-        Log.d("dbug", "size: "+size[0]+", "+size[1]);
         startActivity(VideoActivity.getStartIntent(this, false, capturedMedia,
                 textureView.getWidth(), textureView.getHeight() ,
-                size[0], size[1]));
+                controller.getImageWidth(), controller.getImageHeight()));
     }
 
     void launchTestActivity() {

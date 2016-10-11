@@ -2,7 +2,6 @@ package co.mide.circlevideo;
 
 import android.Manifest;
 import android.annotation.TargetApi;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
@@ -62,6 +61,7 @@ public class MainActivity extends FullscreenActivity {
 
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (needsPermissions()) {
+                FirebaseCrash.log("MainActivity request permissions");
                 requestPermissions(PERMISSIONS, CAMERA_REQUEST_CODE);
             } else {
                 openCamera();
@@ -125,6 +125,7 @@ public class MainActivity extends FullscreenActivity {
     }
 
     Camera openCamera() {
+        FirebaseCrash.log("open camera");
         openCamera(controller.getCameraId());
         return camera;
     }

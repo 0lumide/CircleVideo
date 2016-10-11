@@ -106,7 +106,7 @@ class MainActivityController {
                         try {
                             fos.close();
                         }catch (IOException e) {
-                            //Like seriously??>
+                            //Like seriously??
                             e.printStackTrace();
                         }
                     }
@@ -124,7 +124,8 @@ class MainActivityController {
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
             mainActivity.setSurface(surface);
-            FirebaseCrash.log("onSurfaceTextureAvailable  camera avail: "+(mainActivity.getCamera() != null));
+            FirebaseCrash.log("onSurfaceTextureAvailable  camera avail: "
+                    +(mainActivity.getCamera() != null));
             if(mainActivity.getCamera() != null) {
                 setupCamera(mainActivity.getCamera());
             }

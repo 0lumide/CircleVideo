@@ -78,14 +78,10 @@ public class VideoActivity extends FullscreenActivity {
 
         try {
             mediaPlayer = new MediaPlayer();
-            mediaPlayer.setLooping(false);
+            mediaPlayer.setLooping(true);
             mediaPlayer.setDataSource(recordedFile.getAbsolutePath());
             mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
             mediaPlayer.setSurface(s);
-            mediaPlayer.setOnCompletionListener((mp) -> {
-                textureView.setRotation(0);
-                mediaPlayer.start();
-            });
             mediaPlayer.setOnErrorListener((mp, what, extra)->{
                 //todo show error dialog
                 return true;
@@ -167,7 +163,11 @@ public class VideoActivity extends FullscreenActivity {
         rotationController.setAngleChangeListener(null);
         rotationController.cleanUp();
         if(mediaPlayer != null) {
+            if(mediaPlayer.isPlaying()) {
+                mediaPlayer.pause();
+            }
             mediaPlayer.stop();
+            mediaPlayer.release();
         }
 
         if(isVideo) {

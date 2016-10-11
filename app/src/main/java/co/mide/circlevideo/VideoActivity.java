@@ -7,7 +7,6 @@ import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
-import android.util.Log;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
@@ -54,8 +53,7 @@ public class VideoActivity extends FullscreenActivity {
 
         relativeLayout.getViewTreeObserver().addOnGlobalLayoutListener(layoutListener);
 
-        View view = isVideo ? textureView : imageView;
-        rotationController = new RotationController(this, view::setRotation);
+        rotationController = new RotationController(this);
     }
 
     ViewTreeObserver.OnGlobalLayoutListener layoutListener
@@ -80,10 +78,14 @@ public class VideoActivity extends FullscreenActivity {
 
         try {
             mediaPlayer = new MediaPlayer();
-            mediaPlayer.setLooping(true);
+            mediaPlayer.setLooping(false);
             mediaPlayer.setDataSource(recordedFile.getAbsolutePath());
             mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
             mediaPlayer.setSurface(s);
+            mediaPlayer.setOnCompletionListener((mp) -> {
+                textureView.setRotation(0);
+                mediaPlayer.start();
+            });
             mediaPlayer.setOnErrorListener((mp, what, extra)->{
                 //todo show error dialog
                 return true;
@@ -95,6 +97,7 @@ public class VideoActivity extends FullscreenActivity {
             e.printStackTrace();
         }
     }
+
     private void extractBundleExtras() {
         previewHeight = getIntent().getIntExtra(PREVIEW_HEIGHT, -1);
         previewWidth = getIntent().getIntExtra(PREVIEW_WIDTH, -1);
@@ -154,11 +157,14 @@ public class VideoActivity extends FullscreenActivity {
         if(isFirstRun()) {
             showInfoDialog();
         }
+        View view = isVideo ? textureView : imageView;
+        rotationController.setAngleChangeListener(view::setRotation);
     }
 
     @Override
     public void onPause() {
         super.onPause();
+        rotationController.setAngleChangeListener(null);
         rotationController.cleanUp();
         if(mediaPlayer != null) {
             mediaPlayer.stop();
@@ -199,7 +205,6 @@ public class VideoActivity extends FullscreenActivity {
         int screenWidth = getScreenWidth();
         int screenHeight = getScreenHeight();
 
-        Log.d("dbug", "orig aspect ratio: "+divideInts(recordedWidth, recordedHeight));
         double squared = Math.pow(screenHeight, 2) + Math.pow(screenWidth, 2);
         double maxLength = Math.sqrt(squared);
 
@@ -234,7 +239,6 @@ public class VideoActivity extends FullscreenActivity {
             imageView.setScaleX((float) ratioX);
             imageView.setScaleY((float) ratioY);
         }
-        Log.d("dbug", "new aspect ratio: "+((ratioX*previewWidth)/(ratioY*previewHeight)));
     }
 
 

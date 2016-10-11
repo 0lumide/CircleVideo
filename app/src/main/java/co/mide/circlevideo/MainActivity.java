@@ -1,6 +1,7 @@
 package co.mide.circlevideo;
 
 import android.Manifest;
+import android.annotation.TargetApi;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.SurfaceTexture;
@@ -8,11 +9,12 @@ import android.hardware.Camera;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.util.Log;
 import android.view.TextureView;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.RelativeLayout;
+
+import com.google.firebase.crash.FirebaseCrash;
 
 import java.io.File;
 
@@ -29,6 +31,7 @@ public class MainActivity extends FullscreenActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        FirebaseCrash.log("MainActivity onCreate");
         setContentView(R.layout.activity_main);
         textureView = (TextureView) findViewById(R.id.texture_view);
         recordButton = (RecordButton) findViewById(R.id.record_button);
@@ -39,6 +42,7 @@ public class MainActivity extends FullscreenActivity {
     @Override
     public void onPause() {
         super.onPause();
+        FirebaseCrash.log("MainActivity onPause");
         if(camera != null) {
             camera.release();
             camera = null;
@@ -51,19 +55,32 @@ public class MainActivity extends FullscreenActivity {
     @Override
     public void onResume() {
         super.onResume();
+        FirebaseCrash.log("MainActivity onResume");
         setToolbarVisibility(false);
         recordButton.setRecordListener(controller.getRecordListener());
         textureView.setOnClickListener(controller.getTextureClickListener());
 
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (checkSelfPermission(Manifest.permission.CAMERA)
-                    != PackageManager.PERMISSION_GRANTED) {
-
-                requestPermissions(new String[]{Manifest.permission.CAMERA}, CAMERA_REQUEST_CODE);
+            if (needsPermissions()) {
+                requestPermissions(PERMISSIONS, CAMERA_REQUEST_CODE);
+            } else {
+                openCamera();
             }
         }else{
             openCamera();
         }
+    }
+
+    private final String[] PERMISSIONS
+            = new String[]{Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO};
+
+    @TargetApi(23)
+    private boolean needsPermissions() {
+        boolean needPermission = false;
+        for(String permission : PERMISSIONS){
+            needPermission |= checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED;
+        }
+        return needPermission;
     }
 
     private void initCameraSwitch() {
@@ -95,11 +112,14 @@ public class MainActivity extends FullscreenActivity {
             }
             camera = Camera.open(cameraId);
             //set listener after camera is available or else there'll be problems
-            textureView.setSurfaceTextureListener(controller.getSurfaceTextureListener());
-            controller.setupCamera(camera);
+            if(textureView.getSurfaceTexture() == null) {
+                textureView.setSurfaceTextureListener(controller.getSurfaceTextureListener());
+            } else {
+                controller.setupCamera(camera);
+            }
         }catch(RuntimeException e){
             //todo show dialog saying camera error
-            Log.e("Open Camera", "failed to open Camera");
+            FirebaseCrash.log("failed to open Camera");
             e.printStackTrace();
         }
     }
@@ -150,10 +170,6 @@ public class MainActivity extends FullscreenActivity {
         startActivity(VideoActivity.getStartIntent(this, false, capturedMedia,
                 textureView.getWidth(), textureView.getHeight() ,
                 controller.getImageWidth(), controller.getImageHeight()));
-    }
-
-    void launchTestActivity() {
-        startActivity(new Intent(this, GyroscopeTest.class));
     }
 
     public int getScreenWidth() {

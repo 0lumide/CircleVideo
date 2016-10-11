@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "136242594855",
+    "firebase_url": "https://circle-video.firebaseio.com",
+    "project_id": "circle-video",
+    "storage_bucket": "circle-video.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:136242594855:android:67db6a58425e9910",
+        "android_client_info": {
+          "package_name": "co.mide.circlevideo"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "136242594855-bfe147rd1dusn0u01jjbotg7fp1a4ql9.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBgWnEyT38mw-5bWCI5ei6-Y_jJnt2leAY"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

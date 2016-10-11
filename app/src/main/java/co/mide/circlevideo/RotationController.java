@@ -2,11 +2,11 @@ package co.mide.circlevideo;
 
 import android.content.Context;
 import android.hardware.SensorManager;
+import android.support.annotation.Nullable;
 import android.view.Choreographer;
 
-import org.hitlabnz.sensor_fusion_demo.orientationProvider.ImprovedOrientationSensor2Provider;
+import org.hitlabnz.sensor_fusion_demo.orientationProvider.CalibratedGyroscopeProvider;
 import org.hitlabnz.sensor_fusion_demo.orientationProvider.OrientationProvider;
-import org.hitlabnz.sensor_fusion_demo.representation.Quaternion;
 
 /**
  * Class for handling gyroscope event.
@@ -14,62 +14,62 @@ import org.hitlabnz.sensor_fusion_demo.representation.Quaternion;
  */
 class RotationController {
     private OrientationProvider orientationProvider;
-
-    private Context context;
     private AngleChangeListener angleChangeListener;
+    private Choreographer choreographer;
+    private Choreographer.FrameCallback frameCallback;
+    private float[] values = new float[3];
+    private Context context;
 
 
-    RotationController(Context context, AngleChangeListener angleChangeListener) {
+    RotationController(Context context) {
         this.context = context;
-        this.angleChangeListener = angleChangeListener;
+        this.choreographer = Choreographer.getInstance();
+        frameCallback = createFrameCallback(choreographer);
     }
 
-    private float firstAngle;
-    private int firstN = -5;
-    private Quaternion quaternion = new Quaternion();
+    void setAngleChangeListener(@Nullable AngleChangeListener angleChangeListener) {
+        this.angleChangeListener = angleChangeListener;
+    }
 
     void init() {
         SensorManager sensorManager
                 = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
-        orientationProvider = new ImprovedOrientationSensor2Provider(sensorManager);
+        //CalibratedGyroscopeProvider is relative to the device unlike others in the library
+        orientationProvider = new CalibratedGyroscopeProvider(sensorManager);
         orientationProvider.start();
-        final Choreographer choreographer = Choreographer.getInstance();
-
-        choreographer.postFrameCallback(new Choreographer.FrameCallback() {
-            @Override
-            public void doFrame(long frameTimeNanos) {
-                orientationProvider.getQuaternion(quaternion);
-                if(firstN < 0) {
-                    firstN++;
-                    if(firstN >= 0) {
-                        firstAngle = calcZeta(quaternion.getW(), quaternion.getX(),
-                                quaternion.getY(), quaternion.getZ());
-                    }
-                }else{
-                    float zeta = calcZeta(quaternion.getW(), quaternion.getX(),
-                            quaternion.getY(), quaternion.getZ());
-                    angleChangeListener.angleChange(firstAngle - zeta);
-                }
-                choreographer.postFrameCallback(this);
-
-            }
-        });
-    }
-
-    private float calcPhi(float q0, float q1, float q2, float q3){
-        return (float)Math.toDegrees(Math.atan2(2*(q0*q1 + q2+q3), 1 - 2*(q1*q1 + q2*q2)));
-    }
-
-    private float calcTheta(float q0, float q1, float q2, float q3){
-        return (float)Math.toDegrees(Math.asin(2*(q0*q2 - q3*q1)));
-    }
-
-    private float calcZeta(float q0, float q1, float q2, float q3){
-        return (float)Math.toDegrees(Math.atan2(2*(q0*q3 + q1*q2), 1 - 2*(q2*q2 + q3*q3)));
+        choreographer.postFrameCallback(frameCallback);
     }
 
     void cleanUp() {
+        choreographer.removeFrameCallback(frameCallback);
         orientationProvider.stop();
+    }
+
+    private float startAngle = 0f;
+    private Choreographer.FrameCallback createFrameCallback(Choreographer choreographer) {
+        return new Choreographer.FrameCallback() {
+            @Override
+            public void doFrame(long frameTimeNanos) {
+                orientationProvider.getEulerAngles(values);
+
+                //Convert radians to degrees
+                for(int i = 0; i < values.length; i++) {
+                    values[i] = (float)Math.toDegrees(values[i]);
+                }
+
+                //This is the relevant device rotation
+                float zeta = values[0];
+                if(angleChangeListener != null) {
+                    angleChangeListener.angleChange(startAngle - zeta);
+                } else {
+                    //This isn't really the start angle, it's the angle before start angle
+                    //but I don't want to add the complexity of using a flag,
+                    // and the angle couldn't have changed that much between one frame
+                    startAngle = zeta;
+                }
+                choreographer.postFrameCallback(this);
+            }
+        };
     }
 
     interface AngleChangeListener{

@@ -10,6 +10,8 @@ import android.media.MediaRecorder;
 import android.view.TextureView;
 import android.view.View;
 
+import com.google.firebase.crash.FirebaseCrash;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -122,6 +124,7 @@ class MainActivityController {
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
             mainActivity.setSurface(surface);
+            FirebaseCrash.log("onSurfaceTextureAvailable  camera avail: "+(mainActivity.getCamera() != null));
             if(mainActivity.getCamera() != null) {
                 setupCamera(mainActivity.getCamera());
             }

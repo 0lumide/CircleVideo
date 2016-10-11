@@ -31,9 +31,6 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".GyroscopeTest"
-            android:parentActivityName=".MainActivity"/>
-        <activity
             android:name=".VideoActivity"
             android:label="@string/title_activity_video"
             android:screenOrientation="portrait"
